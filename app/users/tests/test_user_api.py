@@ -98,7 +98,8 @@ class PublicUserAPITests(TestCase):
 
     def test_create_token_missing_field(self):
         """Test that email and password are required"""
-        response = self.client.post(TOKEN_URL, {'email': 'one', 'password': ''})
+        response = self.client.post(TOKEN_URL,
+                                    {'email': 'one', 'password': ''})
 
         self.assertNotIn('token', response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -136,7 +137,8 @@ class PrivateUserApiTests(TestCase):
         """Test that post is not permitted on the me url"""
         response = self.client.post(ME_URL, {})
 
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(response.status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_update_user_profile(self):
         """Test updating the user profile for authenticated user"""

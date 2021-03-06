@@ -24,3 +24,44 @@ class PublicIngredientsAPITests(TestCase):
         response = self.client.get(INGREDIENTS_URL)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class PrivateIngredientsAPITests(TestCase):
+    """Test the ingredients API as an authorized user"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            'test@duskey.io',
+            'testpass123'
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_retrieve_ingredients_list(self):
+        """Test retrieving a list of ingredients"""
+        Ingredient.objects.create(user=self.user, name='Kale')
+        Ingredient.objects.create(user=self.user, name='Salt')
+
+        response = self.client.get(INGREDIENTS_URL)
+
+        ingredients = Ingredient.objects.all().order_by('-name')
+        serializer = IngredientSerializer(ingredients, many=True)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_ingredients_limited_to_user(self):
+        """Test that ingredients for the authenticated user are returned"""
+        other_user = get_user_model().objects.create_user(
+            'test2@duskey.io',
+            'testpass123'
+        )
+        Ingredient.objects.create(user=other_user, name='Vinegar')
+
+        ingredient = Ingredient.objects.create(user=self.user, name='Tumeric')
+
+        response = self.client.get(INGREDIENTS_URL)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], ingredient.name)
